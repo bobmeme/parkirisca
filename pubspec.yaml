@@ -14,7 +14,10 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
+  geolocator: ^8.0.1
+  google_maps_flutter: ^2.1.1
   http: ^0.13.4
+  permission_handler: ^8.3.0
 
 dev_dependencies:
   flutter_test:
@@ -29,5 +32,4 @@ flutter:
   generate: true
 
   assets:
-    # Add assets from the images directory to the application.
-    - assets/images/
+    - assets/map_style.txt
