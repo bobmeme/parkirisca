@@ -101,23 +101,70 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
         Positioned(
           left: 15,
           top: statusBarHeight + 10,
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              shape: const CircleBorder(),
-              padding: const EdgeInsets.all(10.0),
-              primary: Colors.white,
-            ),
-            child: const Icon(
-              Icons.refresh_rounded,
-              size: 20.0,
-              color: Colors.black87,
-            ),
-            onPressed: () async => await context
-                .read<ParkingProvider>()
-                .fetchParking()
-                .then((value) {
-              context.read<ParkingProvider>().spawnMarkers();
-            }),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  shape: const CircleBorder(),
+                  padding: const EdgeInsets.all(10.0),
+                  primary: Colors.white,
+                ),
+                child: const Icon(
+                  Icons.refresh_rounded,
+                  size: 22.0,
+                  color: Colors.black87,
+                ),
+                onPressed: () async => await context
+                    .read<ParkingProvider>()
+                    .fetchParking()
+                    .then((value) {
+                  context.read<ParkingProvider>().spawnMarkers();
+                }),
+              ),
+              const SizedBox(
+                height: 8.0,
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  shape: const CircleBorder(),
+                  padding: const EdgeInsets.all(10.0),
+                  primary: Colors.white,
+                ),
+                child: const Icon(
+                  Icons.filter_alt_rounded,
+                  size: 22.0,
+                  color: Colors.black87,
+                ),
+                onPressed: () {},
+              ),
+              const SizedBox(
+                height: 8.0,
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  shape: const CircleBorder(),
+                  padding: const EdgeInsets.all(10.0),
+                  primary: Colors.white,
+                ),
+                child: const Icon(
+                  Icons.gps_fixed_rounded,
+                  size: 22.0,
+                  color: Colors.lightBlue,
+                ),
+                onPressed: () {
+                  mapController.animateCamera(
+                    CameraUpdate.newCameraPosition(
+                      CameraPosition(
+                          target: LatLng(_currentPosition.latitude,
+                              _currentPosition.longitude),
+                          zoom: _defaultZoom),
+                    ),
+                  );
+                },
+              ),
+            ],
           ),
         ),
       ],
