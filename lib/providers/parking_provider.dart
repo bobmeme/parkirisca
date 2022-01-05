@@ -28,11 +28,30 @@ class ParkingProvider extends ChangeNotifier {
     if (response.statusCode == 200) {
       final parsed = json.decode(response.body)["results"];
       _parkingData = parsed;
+      //{parking_id: 2, name: PETKOVÅ KOVO NABREÅ½JE II., lat: 46.05222222222222, lng: 14.511666666666667, created_date: 2022-01-05T17:58:39.001556+01:00, refreshed_date: 2022-01-05T18:54:00+01:00, occupancy: 128, capacity: 87, handicapped: 1, electric: 0, trend: 0}
+      _parkingData!.add({
+        'parking_id': 1000,
+        'name': 'Kabinet doc. dr. Rok Rupnik (PMP BTW)',
+        'lat': 46.050000,
+        'lng': 14.469112,
+        'refreshed_date': '2022-01-05T18:57:00+01:00',
+        "occupancy": 1,
+        "capacity": 0
+      });
       print('API data refreshed');
       notifyListeners();
     } else {
       throw Exception('Failed to load');
     }
+  }
+
+  void init() async {
+    print('initializing');
+    await fetchParking().then((value) {
+      print(_parkingData);
+      spawnMarkers();
+    });
+    notifyListeners();
   }
 
   void reset() {
@@ -52,6 +71,8 @@ class ParkingProvider extends ChangeNotifier {
         await getBytesFromAsset('assets/icons/garage.png', 100);
     final Uint8List parkingIcon =
         await getBytesFromAsset('assets/icons/parking.png', 100);
+    final Uint8List rokIcon =
+        await getBytesFromAsset('assets/icons/rok.png', 200);
 
     if (_markers.isNotEmpty) _markers = {};
     int occ, cap;
@@ -61,21 +82,23 @@ class ParkingProvider extends ChangeNotifier {
       LatLng pos = LatLng(_parkingData![i]['lat'], _parkingData![i]['lng']);
       Uint8List icon =
           (_parkingData![i]['name'].toString().substring(0, 2) == 'PH')
-              ? garageIcon
+              ? parkingIcon
               : spotIcon;
       _markers.add(
         Marker(
           markerId: MarkerId('id-' + i.toString()),
           position: pos,
-          icon: BitmapDescriptor.fromBytes(icon),
+          icon: (_parkingData![i]['parking_id'] == 1000)
+              ? BitmapDescriptor.fromBytes(rokIcon)
+              : BitmapDescriptor.fromBytes(icon),
           infoWindow: InfoWindow(
               title: _parkingData![i]['name'],
-              snippet: 'Posodobljeno ob: ' +
-                  _parkingData![i]['refreshed_date'] +
-                  '\nZasedenost: ' +
-                  occ.toString() +
-                  '/' +
-                  (cap + occ).toString()),
+              snippet: (_parkingData![i]['parking_id'] == 1000)
+                  ? 'Zasedenost: Samski'
+                  : 'Zasedenost: ' +
+                      occ.toString() +
+                      '/' +
+                      (cap + occ).toString()),
           // onTap: () async {
           //   Position _currentPosition = await Geolocator.getCurrentPosition();
           //   await DirectionsRepository()
@@ -93,6 +116,7 @@ class ParkingProvider extends ChangeNotifier {
         ),
       );
     }
+    notifyListeners();
   }
 }
 

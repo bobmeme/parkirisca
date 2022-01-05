@@ -40,7 +40,7 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
   final double _defaultZoom = 14;
   late String _mapStyle;
 
-  late Position _currentPosition;
+  Position? _currentPosition;
   final LocationSettings _locationSettings = const LocationSettings(
     accuracy: LocationAccuracy.high,
     distanceFilter: 100,
@@ -50,8 +50,11 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
     mapController = controller;
     mapController.setMapStyle(_mapStyle);
     mapController.animateCamera(CameraUpdate.newCameraPosition(CameraPosition(
-        target: LatLng(_currentPosition.latitude, _currentPosition.longitude),
+        target: (_currentPosition == null)
+            ? _center
+            : LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
         zoom: _defaultZoom)));
+    Provider.of<ParkingProvider>(context, listen: false).init();
   }
 
   @override
@@ -107,6 +110,7 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
           zoomControlsEnabled: false,
           tiltGesturesEnabled: false,
           rotateGesturesEnabled: false,
+          mapToolbarEnabled: false,
           onMapCreated: _onMapCreated,
           markers: context.watch<ParkingProvider>().markers,
           polylines: {
@@ -167,6 +171,7 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
                 ),
                 onPressed: () async {
                   var result = await showFilter(context);
+                  if (result == null) return;
                   if (result.length != 0) {
                     // result[0] = lat, result[1] = lng
                     print(result[0]);
@@ -174,8 +179,8 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
                     //     await Geolocator.getCurrentPosition();
                     await DirectionsRepository()
                         .getDirections(
-                            origin: LatLng(_currentPosition.latitude,
-                                _currentPosition.longitude),
+                            origin: LatLng(_currentPosition!.latitude,
+                                _currentPosition!.longitude),
                             destination: LatLng(result[0], result[1]))
                         .then((value) =>
                             context.read<ParkingProvider>().showRoute(value));
@@ -200,8 +205,8 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
                   mapController.animateCamera(
                     CameraUpdate.newCameraPosition(
                       CameraPosition(
-                          target: LatLng(_currentPosition.latitude,
-                              _currentPosition.longitude),
+                          target: LatLng(_currentPosition!.latitude,
+                              _currentPosition!.longitude),
                           zoom: _defaultZoom),
                     ),
                   );
@@ -223,7 +228,7 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
       return GestureDetector(
         onTap: () async {
           var result = await showDetails(context, plc);
-          if (result.length != 0) {
+          if (result != null && result.length != 0) {
             Navigator.pop(context, result);
           }
         },
