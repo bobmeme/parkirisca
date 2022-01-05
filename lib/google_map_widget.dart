@@ -1,13 +1,16 @@
 import 'dart:async';
+import 'dart:convert';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:parkirisca/model/directions_model.dart';
 import 'package:parkirisca/providers/parking_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:provider/provider.dart';
+
+import 'directions_repository.dart';
 
 void requestLocationPermission() async {
   final status = await Permission.locationWhenInUse.request();
@@ -30,9 +33,8 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
   late List<dynamic> _parkingData;
   Set<Marker> _markers = {};
 
-  late GoogleMapController mapController;
-
   // LJ center coordinates -> random location in LJ (46.054939, 14.504820)
+  late GoogleMapController mapController;
   final LatLng _center = const LatLng(46.056946, 14.505751);
   final double _defaultZoom = 14;
   late String _mapStyle;
@@ -49,6 +51,8 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
     mapController.animateCamera(CameraUpdate.newCameraPosition(CameraPosition(
         target: LatLng(_currentPosition.latitude, _currentPosition.longitude),
         zoom: _defaultZoom)));
+    /*mapController
+        .animateCamera(CameraUpdate.newLatLngBounds(_route!.bounds, 50));*/
   }
 
   @override
@@ -83,6 +87,13 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
   @override
   Widget build(BuildContext context) {
     var statusBarHeight = MediaQuery.of(context).viewPadding.top;
+    Directions? selectedRoute = context.watch<ParkingProvider>().selectedRoute;
+
+    if (selectedRoute != null) {
+      mapController.animateCamera(
+          CameraUpdate.newLatLngBounds(selectedRoute.bounds, 50));
+    }
+
     return Stack(
       children: [
         GoogleMap(
@@ -93,6 +104,17 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
           rotateGesturesEnabled: false,
           onMapCreated: _onMapCreated,
           markers: context.watch<ParkingProvider>().markers,
+          polylines: {
+            if (selectedRoute != null)
+              Polyline(
+                polylineId: const PolylineId('overview_polyline'),
+                color: Colors.pink.shade400,
+                width: 5,
+                points: selectedRoute.polylinePoints
+                    .map((e) => LatLng(e.latitude, e.longitude))
+                    .toList(),
+              )
+          },
           initialCameraPosition: CameraPosition(
             target: _center,
             zoom: _defaultZoom,
@@ -121,6 +143,7 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
                     .fetchParking()
                     .then((value) {
                   context.read<ParkingProvider>().spawnMarkers();
+                  context.read<ParkingProvider>().reset();
                 }),
               ),
               const SizedBox(
