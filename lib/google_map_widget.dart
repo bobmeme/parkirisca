@@ -1,13 +1,17 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:parkirisca/model/parking_model.dart';
+import 'package:parkirisca/model/directions_model.dart';
 import 'package:parkirisca/providers/parking_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:provider/provider.dart';
+
+import 'directions_repository.dart';
 
 void requestLocationPermission() async {
   final status = await Permission.locationWhenInUse.request();
@@ -66,14 +70,19 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
 
     StreamSubscription<Position> positionStream =
         Geolocator.getPositionStream(locationSettings: _locationSettings)
-            .listen((Position position) {
-      setState(() {
-        _currentPosition = position;
-      });
-      mapController.animateCamera(CameraUpdate.newCameraPosition(CameraPosition(
-          target: LatLng(position.latitude, position.longitude),
-          zoom: _defaultZoom)));
-    });
+            .listen(
+      (Position position) {
+        setState(() {
+          _currentPosition = position;
+        });
+        mapController.animateCamera(CameraUpdate.newCameraPosition(
+            CameraPosition(
+                target: LatLng(position.latitude, position.longitude),
+                zoom: _defaultZoom)));
+        /*mapController
+        .animateCamera(CameraUpdate.newLatLngBounds(_route!.bounds, 50));*/
+      },
+    );
 
     WidgetsBinding.instance
         ?.addPostFrameCallback((_) => requestLocationPermission());
@@ -82,6 +91,14 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
   @override
   Widget build(BuildContext context) {
     var statusBarHeight = MediaQuery.of(context).viewPadding.top;
+
+    Directions? selectedRoute = context.watch<ParkingProvider>().selectedRoute;
+
+    if (selectedRoute != null) {
+      mapController.animateCamera(
+          CameraUpdate.newLatLngBounds(selectedRoute.bounds, 50));
+    }
+
     return Stack(
       children: [
         GoogleMap(
@@ -92,6 +109,17 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
           rotateGesturesEnabled: false,
           onMapCreated: _onMapCreated,
           markers: context.watch<ParkingProvider>().markers,
+          polylines: {
+            if (selectedRoute != null)
+              Polyline(
+                polylineId: const PolylineId('overview_polyline'),
+                color: Colors.pink.shade400,
+                width: 5,
+                points: selectedRoute.polylinePoints
+                    .map((e) => LatLng(e.latitude, e.longitude))
+                    .toList(),
+              )
+          },
           initialCameraPosition: CameraPosition(
             target: _center,
             zoom: _defaultZoom,
@@ -120,6 +148,7 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
                     .fetchParking()
                     .then((value) {
                   context.read<ParkingProvider>().spawnMarkers();
+                  context.read<ParkingProvider>().reset();
                 }),
               ),
               const SizedBox(
@@ -139,7 +168,17 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
                 onPressed: () async {
                   var result = await showFilter(context);
                   if (result.length != 0) {
+                    // result[0] = lat, result[1] = lng
                     print(result[0]);
+                    // Position _currentPosition =
+                    //     await Geolocator.getCurrentPosition();
+                    await DirectionsRepository()
+                        .getDirections(
+                            origin: LatLng(_currentPosition.latitude,
+                                _currentPosition.longitude),
+                            destination: LatLng(result[0], result[1]))
+                        .then((value) =>
+                            context.read<ParkingProvider>().showRoute(value));
                   }
                 },
               ),

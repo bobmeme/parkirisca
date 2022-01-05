@@ -40,6 +40,11 @@ class ParkingProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void showRoute(Directions? d) {
+    _selectedRoute = d;
+    notifyListeners();
+  }
+
   void spawnMarkers() async {
     final Uint8List spotIcon =
         await getBytesFromAsset('assets/icons/spot.png', 100);
@@ -71,18 +76,20 @@ class ParkingProvider extends ChangeNotifier {
                   occ.toString() +
                   '/' +
                   (cap + occ).toString()),
-          onTap: () async {
-            Position _currentPosition = await Geolocator.getCurrentPosition();
-            await DirectionsRepository()
-                .getDirections(
-                    origin: LatLng(
-                        _currentPosition.latitude, _currentPosition.longitude),
-                    destination: pos)
-                .then((value) {
-              _selectedRoute = value;
-              notifyListeners();
-            });
-          },
+          // onTap: () async {
+          //   Position _currentPosition = await Geolocator.getCurrentPosition();
+          //   await DirectionsRepository()
+          //       .getDirections(
+          //           origin: LatLng(
+          //               _currentPosition.latitude, _currentPosition.longitude),
+          //           destination: pos)
+          //       .then(
+          //     (value) {
+          //       _selectedRoute = value;
+          //       notifyListeners();
+          //     },
+          //   );
+          // },
         ),
       );
     }
