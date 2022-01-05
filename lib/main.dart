@@ -24,8 +24,8 @@ class _MyAppState extends State<MyApp> {
       theme: ThemeData(
         primaryColor: Colors.lightBlueAccent,
       ),
-      home: Scaffold(
-        body: const GoogleMapWidget(),
+      home: const Scaffold(
+        body: GoogleMapWidget(),
       ),
     );
   }
