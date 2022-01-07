@@ -202,14 +202,16 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
                   color: Colors.lightBlue,
                 ),
                 onPressed: () {
-                  mapController.animateCamera(
-                    CameraUpdate.newCameraPosition(
-                      CameraPosition(
-                          target: LatLng(_currentPosition!.latitude,
-                              _currentPosition!.longitude),
-                          zoom: _defaultZoom),
-                    ),
-                  );
+                  if(_currentPosition != null){
+                    mapController.animateCamera(
+                      CameraUpdate.newCameraPosition(
+                        CameraPosition(
+                            target: LatLng(_currentPosition!.latitude,
+                                _currentPosition!.longitude),
+                            zoom: _defaultZoom),
+                      ),
+                    );
+                  }
                 },
               ),
             ],
