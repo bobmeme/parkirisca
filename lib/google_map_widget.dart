@@ -202,7 +202,7 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
                   color: Colors.lightBlue,
                 ),
                 onPressed: () {
-                  if(_currentPosition != null){
+                  if (_currentPosition != null) {
                     mapController.animateCamera(
                       CameraUpdate.newCameraPosition(
                         CameraPosition(
@@ -212,6 +212,27 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
                       ),
                     );
                   }
+                },
+              ),
+              const SizedBox(
+                height: 8.0,
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  shape: const CircleBorder(),
+                  padding: const EdgeInsets.all(10.0),
+                  primary: Colors.white,
+                ),
+                child: const Icon(
+                  Icons.add_circle_outline,
+                  size: 22.0,
+                  color: Colors.black,
+                ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const AddParking()),
+                  );
                 },
               ),
             ],
@@ -334,4 +355,130 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
           ],
         ),
       );
+}
+
+class Parking1 {
+  String name = '';
+  double lat = 0.0;
+  double lng = 0.0;
+  double price = 0.0;
+  bool occupied = false;
+}
+
+List<Parking1> data = [];
+
+class AddParking extends StatefulWidget {
+  const AddParking({Key? key}) : super(key: key);
+
+  @override
+  AddParkingState createState() {
+    return AddParkingState();
+  }
+}
+
+class AddParkingState extends State<AddParking> {
+  final _formKey = GlobalKey<FormState>();
+  bool isChecked = false;
+  Parking1 _data = Parking1();
+
+  void submit() {
+    if (_formKey.currentState!.validate()) {
+      _data.occupied = isChecked;
+      _formKey.currentState!.save();
+      Parking1 temp = Parking1();
+      temp.name = _data.name;
+      temp.lat = _data.lat;
+      temp.lng = _data.lng;
+      temp.occupied = _data.occupied;
+      temp.price = _data.price;
+
+      data.add(temp);
+      for (int i = 0; i < data.length; i++) {
+        print(data[i].name);
+      }
+      Navigator.pop(context);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final Size screenSize = MediaQuery.of(context).size;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Add parking"),
+      ),
+      body: Container(
+          padding: EdgeInsets.all(20.0),
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              children: <Widget>[
+                TextFormField(
+                    validator: (value) {
+                      if (value == null || value.isEmpty)
+                        return 'Please enter parking name';
+                      return null;
+                    },
+                    onSaved: (value) {
+                      _data.name = value.toString();
+                    },
+                    decoration: new InputDecoration(labelText: 'Parking name')),
+                TextFormField(
+                    validator: (value) {
+                      if (value == null || value.isEmpty)
+                        return 'Please enter latitude number';
+                      return null;
+                    },
+                    onSaved: (value) {
+                      _data.lat = double.parse(value!);
+                    },
+                    decoration: new InputDecoration(labelText: 'Latitude')),
+                TextFormField(
+                    validator: (value) {
+                      if (value == null || value.isEmpty)
+                        return 'Please enter longitude number';
+                      return null;
+                    },
+                    onSaved: (value) {
+                      _data.lng = double.parse(value!);
+                    },
+                    decoration: new InputDecoration(labelText: 'Longitude')),
+                TextFormField(
+                    validator: (value) {
+                      if (value == null || value.isEmpty)
+                        return 'Please enter price number';
+                      return null;
+                    },
+                    onSaved: (value) {
+                      _data.price = double.parse(value!);
+                    },
+                    decoration: new InputDecoration(labelText: 'Price')),
+                CheckboxListTile(
+                  checkColor: Colors.white,
+                  title: Text("Occupied"),
+                  value: isChecked,
+                  onChanged: (bool? value) {
+                    setState(() {
+                      isChecked = value!;
+                    });
+                  },
+                  controlAffinity: ListTileControlAffinity.leading,
+                ),
+                Container(
+                  width: screenSize.width,
+                  child: ElevatedButton(
+                    child: const Text(
+                      'Save',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                    onPressed: submit,
+                  ),
+                  margin: EdgeInsets.only(top: 20.0),
+                ),
+              ],
+            ),
+          )),
+    );
+  }
 }
