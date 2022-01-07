@@ -96,6 +96,7 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
     var statusBarHeight = MediaQuery.of(context).viewPadding.top;
 
     Directions? selectedRoute = context.watch<ParkingProvider>().selectedRoute;
+    context.watch<ParkingProvider>().parkingData;
 
     if (selectedRoute != null) {
       mapController.animateCamera(
@@ -165,7 +166,7 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
                   primary: Colors.white,
                 ),
                 child: const Icon(
-                  Icons.filter_alt_rounded,
+                  Icons.list_rounded,
                   size: 22.0,
                   color: Colors.black87,
                 ),
@@ -206,9 +207,10 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
                     mapController.animateCamera(
                       CameraUpdate.newCameraPosition(
                         CameraPosition(
-                            target: LatLng(_currentPosition!.latitude,
-                                _currentPosition!.longitude),
-                            zoom: _defaultZoom),
+                          target: LatLng(_currentPosition!.latitude,
+                              _currentPosition!.longitude),
+                          zoom: _defaultZoom,
+                        ),
                       ),
                     );
                   }
@@ -243,11 +245,12 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
   }
 
   Future showFilter(BuildContext context) async {
-    await context.read<ParkingProvider>().fetchParking();
+    //await context.read<ParkingProvider>().fetchParking();
     List<dynamic> parkData = context.read<ParkingProvider>().parkingData;
 
     Widget buildParkTile(BuildContext context, int index) {
       final plc = parkData[index];
+    
       return GestureDetector(
         onTap: () async {
           var result = await showDetails(context, plc);
@@ -258,31 +261,35 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
         child: Card(
           child: Padding(
             padding: const EdgeInsets.all(16.0),
-            child: Column(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: <Widget>[
                 Padding(
                   padding: const EdgeInsets.only(top: 8.0, bottom: 4.0),
-                  child: Row(
-                    children: <Widget>[
-                      Text(
-                        plc["name"],
-                        style: const TextStyle(fontSize: 20.0),
-                      ),
-                      const Spacer(),
-                      Text(
-                        plc["occupancy"].toString(),
-                      ),
-                      const Text("/"),
-                      Text(
-                        (plc["occupancy"] + plc["capacity"]).toString(),
-                      ),
-                    ],
+                  child: Text(
+                    plc["name"],
+                    style: const TextStyle(fontSize: 15.0),
                   ),
                 ),
-                Text(
-                  plc["capacity"] == 0 ? "ZASEDENO" : "PROSTO",
-                  style: TextStyle(
-                      color: plc["capacity"] == 0 ? Colors.red : Colors.green),
+                Column(
+                  //mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Text(
+                      plc["occupancy"].toString() +
+                          "/" +
+                          (plc["occupancy"] + plc["capacity"]).toString(),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8.0, bottom: 4.0),
+                      child: Text(
+                        plc["capacity"] == 0 ? "ZASEDENO" : "PROSTO",
+                        style: TextStyle(
+                            color: plc["capacity"] == 0
+                                ? Colors.red
+                                : Colors.green),
+                      ),
+                    ),
+                  ],
                 )
               ],
             ),
@@ -317,10 +324,13 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
                 onPressed: () => Navigator.of(context).pop(),
               ),
               const SizedBox(height: 12),
-              const Text(
-                'Izberite parametre za iskanje parkirnega prostora.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 20),
+              const Padding(
+                padding: EdgeInsets.all(4.0),
+                child: Text(
+                  'Izberite parametre za iskanje parkirnega prostora.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 17),
+                ),
               ),
               Expanded(
                 child: ListView.builder(
@@ -340,13 +350,56 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
   showDetails(BuildContext context, final data) async => await showDialog(
         context: context,
         builder: (BuildContext context) => AlertDialog(
-          title: Text(data["name"]),
-          content: const Text("This is my message."),
+          actionsPadding: const EdgeInsets.all(0),
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(20.0)),
+          ),
+          contentPadding: const EdgeInsets.all(20),
+          actionsAlignment: MainAxisAlignment.center,
+          title: Center(
+            child: Text(
+              data["name"],
+              style: const TextStyle(fontSize: 15),
+            ),
+          ),
+          content: Padding(
+            padding: const EdgeInsets.only(top: 15),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const Icon(Icons.electric_car_rounded),
+                const Spacer(
+                  flex: 1,
+                ),
+                Text(data["electric"]!.toString()),
+                const Spacer(
+                  flex: 4,
+                ),
+                const Icon(Icons.accessible_rounded),
+                const Spacer(
+                  flex: 1,
+                ),
+                Text(data["handicapped"]!.toString()),
+                const Spacer(
+                  flex: 4,
+                ),
+                const Icon(Icons.local_parking_rounded),
+                const Spacer(
+                  flex: 1,
+                ),
+                Text(data["capacity"]!.toString() +
+                    " / " +
+                    (data["capacity"] + data["occupancy"])!.toString()),
+              ],
+            ),
+          ),
           actions: [
             TextButton(
-              child: const Text("CLOSE"),
-              onPressed: () => Navigator.pop(context, []),
-            ),
+                child: const Text("CLOSE"),
+                onPressed: () {
+                  setState(() {});
+                  Navigator.pop(context, []);
+                }),
             TextButton(
               child: const Text("GO"),
               onPressed: () =>
@@ -381,35 +434,17 @@ class AddParkingState extends State<AddParking> {
   bool isChecked = false;
   Parking1 _data = Parking1();
 
-  void submit() {
-    if (_formKey.currentState!.validate()) {
-      _data.occupied = isChecked;
-      _formKey.currentState!.save();
-      Parking1 temp = Parking1();
-      temp.name = _data.name;
-      temp.lat = _data.lat;
-      temp.lng = _data.lng;
-      temp.occupied = _data.occupied;
-      temp.price = _data.price;
-
-      data.add(temp);
-      for (int i = 0; i < data.length; i++) {
-        print(data[i].name);
-      }
-      Navigator.pop(context);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final Size screenSize = MediaQuery.of(context).size;
+    List<dynamic> parkingData = context.read<ParkingProvider>().parkingData;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text("Add parking"),
       ),
       body: Container(
-          padding: EdgeInsets.all(20.0),
+          padding: const EdgeInsets.all(20.0),
           child: Form(
             key: _formKey,
             child: ListView(
@@ -423,11 +458,13 @@ class AddParkingState extends State<AddParking> {
                     onSaved: (value) {
                       _data.name = value.toString();
                     },
-                    decoration: new InputDecoration(labelText: 'Parking name')),
+                    decoration:
+                        const InputDecoration(labelText: 'Parking name')),
                 TextFormField(
                     validator: (value) {
-                      if (value == null || value.isEmpty)
+                      if (value == null || value.isEmpty) {
                         return 'Please enter latitude number';
+                      }
                       return null;
                     },
                     onSaved: (value) {
@@ -446,17 +483,18 @@ class AddParkingState extends State<AddParking> {
                     decoration: new InputDecoration(labelText: 'Longitude')),
                 TextFormField(
                     validator: (value) {
-                      if (value == null || value.isEmpty)
+                      if (value == null || value.isEmpty) {
                         return 'Please enter price number';
+                      }
                       return null;
                     },
                     onSaved: (value) {
                       _data.price = double.parse(value!);
                     },
-                    decoration: new InputDecoration(labelText: 'Price')),
+                    decoration: const InputDecoration(labelText: 'Price')),
                 CheckboxListTile(
                   checkColor: Colors.white,
-                  title: Text("Occupied"),
+                  title: const Text("Occupied"),
                   value: isChecked,
                   onChanged: (bool? value) {
                     setState(() {
@@ -472,9 +510,37 @@ class AddParkingState extends State<AddParking> {
                       'Save',
                       style: TextStyle(color: Colors.white),
                     ),
-                    onPressed: submit,
+                    onPressed: () async {
+                      if (_formKey.currentState!.validate()) {
+                        _data.occupied = isChecked;
+                        _formKey.currentState!.save();
+                        Parking1 temp = Parking1();
+                        temp.name = _data.name;
+                        temp.lat = _data.lat;
+                        temp.lng = _data.lng;
+                        temp.occupied = _data.occupied;
+                        temp.price = _data.price;
+
+                        dynamic m = {
+                          "parking_id": parkingData.last["parking_id"] + 1,
+                          "name": _data.name,
+                          "lat": _data.lat,
+                          "lng": _data.lng,
+                          "refreshed_date": DateTime.now(),
+                          "occupancy": isChecked ? 0 : 1,
+                          "capacity": 1,
+                          "occupied": _data.occupied,
+                          "price": _data.price,
+                          "single": true,
+                        };
+
+                        context.read<ParkingProvider>().addParkingSpot(m);
+                        Navigator.pop(context);
+                      }
+                      
+                    },
                   ),
-                  margin: EdgeInsets.only(top: 20.0),
+                  margin: const EdgeInsets.only(top: 20.0),
                 ),
               ],
             ),

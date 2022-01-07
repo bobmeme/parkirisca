@@ -26,7 +26,7 @@ class ParkingProvider extends ChangeNotifier {
         Uri.parse('https://api.ontime.si/api/v1/parking/?format=json&page=1'));
 
     if (response.statusCode == 200) {
-      final parsed = json.decode(response.body)["results"];
+      final parsed = json.decode(utf8.decode(response.bodyBytes))["results"];
       _parkingData = parsed;
       //{parking_id: 2, name: PETKOVÅ KOVO NABREÅ½JE II., lat: 46.05222222222222, lng: 14.511666666666667, created_date: 2022-01-05T17:58:39.001556+01:00, refreshed_date: 2022-01-05T18:54:00+01:00, occupancy: 128, capacity: 87, handicapped: 1, electric: 0, trend: 0}
       _parkingData!.add({
@@ -62,6 +62,13 @@ class ParkingProvider extends ChangeNotifier {
   void showRoute(Directions? d) {
     _selectedRoute = d;
     notifyListeners();
+  }
+
+  void addParkingSpot(dynamic m) {
+    _parkingData!.add(m);
+    print(_parkingData!.last);
+    print("Done!");
+    //notifyListeners();
   }
 
   void spawnMarkers() async {
